@@ -97,7 +97,7 @@ for index, row in training_data.iterrows():
 		row['contact'] = contact_dict[row['contact']]
 
 
-	print(row['contact'])
+	# print(row['contact'])
 
 
 	# Process Month
@@ -107,18 +107,42 @@ for index, row in training_data.iterrows():
 	if row['month'] in month_dict:
 		row['month'] = month_dict[row['month']]	
 
-	print(row['month'])
+	# print(row['month'])
 
 
+	# Process Weekday
+
+	week_dict = {'mon': 1, 'tue': 2, 'wed': 3, 'thu': 4, 'fri': 5}
+
+	if row['day_of_week'] in week_dict:
+		row['day_of_week'] = week_dict[row['day_of_week']]	
 
 
+	# print(row['day_of_week'])
 
 
+	# Process Duration
+
+	duration = 100
+
+	if row['duration'] < duration:
+		row['duration'] = 0
+	else:
+		row['duration'] = 1
+
+	# print(row['duration'])
 
 
+	# Process Duration
 
+	camp = 25
 
+	if row['campaign'] < camp:
+		row['campaign'] = 0
+	else:
+		row['campaign'] = 1
 
+	print(row['campaign'])
 
 
 
