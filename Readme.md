@@ -1,12 +1,12 @@
 ### CS-5282 Project 1
 
-Group project for CS-5282 (Knowledge Discovery and Data Mining)
+Data Mining Group project for CS5228-Knowledge Discovery and Data Mining
 
-This project aims at accurately predicting whether the product (bank term deposit) would be ('yes') or not ('no') subscribed.
+This project aims at accurately predicting whether the product (bank term deposit) would be subscribed by the cutomer or not.
 
 
 
-Given features - 
+### Features - 
 
 * 0 - id (integer)
 * 1 - age (numeric)
@@ -24,9 +24,23 @@ Given features -
 * 13 - pdays: number of days that passed by after the client was last contacted from a previous campaign (numeric; 999 means client was not previously contacted)
 * 14 - previous: number of contacts performed before this campaign and for this client (numeric)
 * 15 - poutcome: outcome of the previous marketing campaign (categorical: 'failure','nonexistent','success') social and economic context attributes
-* 16 - emp.var.rate: employment variation rate - quarterly indicator (numeric)
+* 16 - emp.var.rate: 
+
+employment variation rate - quarterly indicator (numeric)
 * 17 - cons.price.idx: consumer price index - monthly indicator (numeric) 
 * 18 - cons.conf.idx: consumer confidence index - monthly indicator (numeric) 
 * 19 - euribor3m: euribor 3 month rate - daily indicator (numeric)
 * 20 - nr.employed: number of employees - quarterly indicator (numeric)
+
+
+### TODO's
+
+
+- [ ] Read and process orginal training data.
+	- [ ] Normalize the training data from (-1 to 1)
+- [ ] Create excel report which contains processing performed for each feature in a separate excel tab.
+- [ ] Implement a basic LR model and check accuracy.
+- [ ] Find correlation among all 21 variables.
+- [ ] Implement Random Forest
+- [ ] Implement Neural Network
 
