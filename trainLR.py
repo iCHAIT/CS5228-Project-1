@@ -133,7 +133,7 @@ for index, row in training_data.iterrows():
 	# print(row['duration'])
 
 
-	# Process Duration
+	# Process Campaign
 
 	camp = 25
 
