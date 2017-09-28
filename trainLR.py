@@ -1,6 +1,7 @@
 import pandas as pd
 from sklearn.linear_model import LogisticRegression
 import csv
+import os
 
 
 # Training Data - train.csv
@@ -14,17 +15,8 @@ target = ["y"]
 
 dataset = pd.read_csv("train.csv")
 
-
-# data = pd.read_csv("train.csv", usecols = ['age','job','marital','education','default','housing','loan','contact','month',
-# 	                                       'day_of_week','duration','campaign','pdays','previous','poutcome','emp.var.rate',
-# 	                                       'cons.price.idx','cons.conf.idx','euribor3m','nr.employed']).to_dict(orient="records")
-
-
-# X_Train = pd.read_csv("train.csv", usecols = training_features).to_dict(orient="records")
 training_data = pd.read_csv("train.csv", usecols=training_features)
 
-# print(type(training_data))
-# quit()
 
 X_Train = []
 
@@ -228,26 +220,14 @@ for index, row in training_data_Y.iterrows():
 
     Y_Train.append(row['y'])
 
-# Now data is a list of all client records
-# print(X_Train)
-# print(Y_Train)
-
-# Test if dict is correct
-# for record in X_Train:
-# 	print(record)
-# 	quit()
-
 
 clf = LogisticRegression()
 model = clf.fit(X_Train, Y_Train)
 
 
 
-
 testing_data = pd.read_csv("test.csv", usecols=training_features)
 
-# print(type(training_data))
-# quit()
 
 Y_Train = []
 
@@ -436,7 +416,16 @@ for index, row in testing_data.iterrows():
 out = model.predict(Y_Train)
 
 
-with open('sampleSubmission.csv', 'a') as outfile:
+filename = 'sampleSubmission.csv'
+
+# Remove old prediction file if it exists
+
+try:
+    os.remove(filename)
+except OSError:
+    pass
+
+with open(filename, 'a') as outfile:
     writer = csv.writer(outfile)
     writer.writerow(['id', 'prediction'])
     
