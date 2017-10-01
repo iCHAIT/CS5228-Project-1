@@ -44,7 +44,7 @@ for index, row in training_data.iterrows():
 
     marital_status = {'single': 1, 'divorced': 2, 'married': 3, 'unknown': 4}
 
-    if row['marital'] in ['single', 'unknown']:
+    if row['marital'] in ['single']:
         row['marital'] = 1
     else:
         row['marital'] = 0
