@@ -8,7 +8,7 @@ import tensorflow as tf
 import csv
 
 data_dir = '/Users/mustafauo/Dropbox/NUS_Academic/NUS_2017_2018_1/CS5228/Banking_Project/Python_Code/'
-model_name  = 'model_128_64_val_acc_0.912_val_loss_0.207_2017-10-01 20:23:19.ckpt'
+model_name  = 'model_64_16_val_acc_0.877_val_loss_0.283_2017-10-05 23:09:15.ckpt'
 model_filepath = os.path.join(data_dir, model_name)
 
 out_file = os.path.join(data_dir, 'X_test.npy')
@@ -28,8 +28,8 @@ display_step = 1
 # Network Parameters
 n_input = X_test.shape[1]
 n_classes = 2
-n_hidden_1 = 128 # 1st layer number of neurons
-n_hidden_2 = 64 # 2nd layer number of neurons
+n_hidden_1 = 64 # 1st layer number of neurons
+n_hidden_2 = 16 # 2nd layer number of neurons
 
 
 def write_to_csv_file(filepath, data):
