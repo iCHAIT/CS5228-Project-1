@@ -7,7 +7,7 @@ import pandas as pd
 # Multinomial Naive Bayes Classifier  
 def naive_bayes_classifier(train_x, train_y):
     from sklearn.naive_bayes import MultinomialNB
-    model = MultinomialNB(alpha=0.01)
+    model = MultinomialNB(alpha=1)
     model.fit(train_x, train_y)
     return model
 
@@ -118,6 +118,7 @@ if __name__ == '__main__':
         model = classifiers[classifier](train_x, train_y)
         print('training took %fs!' % (time.time() - start_time))
         predict = model.predict(test_x)
+
 #################################
         result_name = "sampleSubmission" + classifier +".csv"
         file_object = open(result_name, 'w')

@@ -49,28 +49,6 @@ def chackWEEK(day_of_week):
     if day_of_week == "thu": return 3
     if day_of_week == "fri": return 4
 
-def chackPdays(num):
-    return num
-    if num == 999: return 2 # 0.81
-    return num / 20
-
-def chackDURA(num):
-    return (num/420)
-    if num <= 50: return 0
-    if num > 50 and num <= 100: return 1
-    if num > 100 and num <= 150: return 2
-    if num > 150 and num <= 200: return 3
-    if num > 200 and num <= 250: return 4
-    if num > 250 and num <= 300: return 5
-    if num > 300 and num <= 350: return 6
-    if num > 350 and num <= 400: return 7
-    if num > 400 and num <= 450: return 8
-    if num > 450 and num <= 500: return 9
-    if num > 500 and num <= 550: return 10
-    if num > 550 and num <= 600: return 11
-    if num > 600 and num <= 650: return 12
-    if num > 650 and num <= 700: return 13
-    if num > 700: return 14
 
 
 #######################################################################
@@ -93,13 +71,7 @@ def chackPOUTCOME(poutcome):
     if poutcome == "nonexistent": return 1 # 0.77;
     if poutcome == "success": return  2 #5.84;
 
-def chackCAMP(num):
-    return num/40
-    if num <= 10: return 0 # 1.01
-    if num > 10 and num <= 20: return 0.25 # 0.37
-    if num > 20 and num <= 30: return 0.5 # 0.09
-    if num > 30 and num <= 40: return 0.75 # 0
-    if num > 40: return 1 # 0
+
 
 def chackMARITAL(marital):
     if marital == "single": return 0;
@@ -121,26 +93,26 @@ class Client: # a class to of client, used to save all the data.
 
     def __init__(self, id, age, job, marital, education, default, housing, loan, contact, month, day_of_week, duration, campaign, pdays, previous, poutcome, emp_var_rate, cons_price_idx, cons_conf_idx, euribor3m, nr_employed, Output):
         self.id = id                                         # 0
-        self.age = ((int(age)) -17) /70                                # 1
-        self.job = (chackJOB(job)) /11                            # 2
-        self.marital = chackMARITAL(marital)/2                 # 3
-        self.education = chackEDUCATION(education)/7           # 4
+        self.age = int(age)                                # 1
+        self.job = chackJOB(job)                            # 2
+        self.marital = chackMARITAL(marital)                # 3
+        self.education = chackEDUCATION(education)           # 4
         self.default = chackDEFAULT(default)                 # 5
         self.housing = chackHOUSE(housing)                   # 6
         self.loan = chackLOAN(loan)                          # 7
         self.contact = chackCONTACK(contact)                 # 8
-        self.month = chackMOUTH(month) /9                     # 9
-        self.day_of_week = chackWEEK(day_of_week) /4           # 10
-        self.duration = chackDURA(int(duration))                       # 11
-        self.campaign = chackCAMP(int(campaign))                        # 12
-        self.pdays = chackPdays(int(pdays))                              # 13
-        self.previous = int(previous) /6                     # 14
+        self.month = chackMOUTH(month)                     # 9
+        self.day_of_week = chackWEEK(day_of_week)           # 10
+        self.duration = int(duration)                     # 11
+        self.campaign = int(campaign)                        # 12
+        self.pdays = int(pdays)                              # 13
+        self.previous = int(previous)                    # 14
         self.poutcome = chackPOUTCOME(poutcome)              # 15
-        self.emp_var_rate = (float(emp_var_rate) + 3.4)/3            # 16
-        self.cons_price_idx = (float(cons_price_idx) - 92.201)         # 17
-        self.cons_conf_idx = (float(cons_conf_idx) + 50.8)/15           # 18
-        self.euribor3m = float(euribor3m)  /3                  # 19
-        self.nr_employed = (float(nr_employed)-4963) /80           # 20
+        self.emp_var_rate = (float(emp_var_rate) + 3.4)          # 16
+        self.cons_price_idx = float(cons_price_idx)          # 17
+        self.cons_conf_idx = (float(cons_conf_idx) + 50.8)           # 18
+        self.euribor3m = float(euribor3m)                  # 19
+        self.nr_employed = float(nr_employed)          # 20
         self.Output = chackOUTPUT(Output)                    # 21
 
 
