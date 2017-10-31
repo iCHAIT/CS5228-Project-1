@@ -47,7 +47,7 @@ def decision_tree_classifier(train_x, train_y):
 # GBDT(Gradient Boosting Decision Tree) Classifier  
 def gradient_boosting_classifier(train_x, train_y):
     from sklearn.ensemble import GradientBoostingClassifier
-    model = GradientBoostingClassifier(n_estimators=200)
+    model = GradientBoostingClassifier(n_estimators=1000)
     model.fit(train_x, train_y)
     return model
 

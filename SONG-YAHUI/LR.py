@@ -7,7 +7,7 @@ import pandas as pd
 # Multinomial Naive Bayes Classifier  
 def naive_bayes_classifier(train_x, train_y):
     from sklearn.naive_bayes import MultinomialNB
-    model = MultinomialNB(alpha=1)
+    model = MultinomialNB(alpha=0.05)
     model.fit(train_x, train_y)
     return model
 
@@ -23,7 +23,7 @@ def knn_classifier(train_x, train_y):
 # Logistic Regression Classifier  
 def logistic_regression_classifier(train_x, train_y):
     from sklearn.linear_model import LogisticRegression
-    model = LogisticRegression(penalty='l2')
+    model = LogisticRegression()
     model.fit(train_x, train_y)
     return model
 
@@ -31,7 +31,7 @@ def logistic_regression_classifier(train_x, train_y):
 # Random Forest Classifier  
 def random_forest_classifier(train_x, train_y):
     from sklearn.ensemble import RandomForestClassifier
-    model = RandomForestClassifier(n_estimators=8)
+    model = RandomForestClassifier(n_estimators=1000)
     model.fit(train_x, train_y)
     return model
 
@@ -51,14 +51,14 @@ def gradient_boosting_classifier(train_x, train_y):
     model.fit(train_x, train_y)
     return model
 
-'''
+
 # SVM Classifier  
 def svm_classifier(train_x, train_y):
     from sklearn.svm import SVC
     model = SVC(kernel='rbf', probability=True)
     model.fit(train_x, train_y)
     return model
-'''
+
 
 '''
 # SVM Classifier using cross validation
@@ -95,7 +95,7 @@ if __name__ == '__main__':
     model_save_file = "model_save_file.csv"
     model_save = {}
 
-    test_classifiers = ['NB', 'KNN', 'LR', 'RF', 'DT', 'GBDT']
+    test_classifiers = ['NB', 'KNN', 'LR', 'RF', 'DT', 'SVM','GBDT']
     # test_classifiers = ['NB', 'KNN', 'LR', 'RF', 'DT', 'SVM', 'SVMCV', 'GBDT']
 
     classifiers = {'NB': naive_bayes_classifier,
@@ -103,7 +103,7 @@ if __name__ == '__main__':
                    'LR': logistic_regression_classifier,
                    'RF': random_forest_classifier,
                    'DT': decision_tree_classifier,
-                   # 'SVM': svm_classifier,
+                   'SVM': svm_classifier,
                    # 'SVMCV': svm_cross_validation,
                    'GBDT': gradient_boosting_classifier
                    }
