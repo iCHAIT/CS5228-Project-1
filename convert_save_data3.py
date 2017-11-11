@@ -8,7 +8,6 @@ data_dir = '/Users/mustafauo/Dropbox/NUS_Academic/NUS_2017_2018_1/CS5228/Banking
 features = ['age', 'job', 'marital', 'education', 'default', 'housing', 'loan', 'contact', 'month',
 'day_of_week', 'duration', 'campaign', 'pdays', 'previous', 'poutcome', 'emp.var.rate',
 'cons.price.idx', 'cons.conf.idx', 'euribor3m', 'nr.employed']
-
 job_dict = {
 'admin.': [1,0,0,0,0,0,0,0,0,0,0], 
 'self-employed': [0,1,0,0,0,0,0,0,0,0,0], 
@@ -86,7 +85,9 @@ poutcome_dict = {
 'success': [0,1],
 'nonexistent': [-1,-1]}
 
-
+def normalize(arr):
+	# return (( (arr - arr.min()) / (arr.max() - arr.min()) )*2-1)[:,np.newaxis]
+	return (( (arr - arr.mean()) / (arr.std()) ))[:,np.newaxis]
 
 data_file = os.path.join(data_dir, 'train.csv')
 train_data = pd.read_csv(data_file, usecols=features)
@@ -100,37 +101,37 @@ data = pd.concat([train_data,test_data])
 
 
 age_arr = np.asarray(data['age'])
-age_arr = (( (age_arr - age_arr.min()) / (age_arr.max() - age_arr.min()) )*2 - 1)[:,np.newaxis]
+age_arr = normalize(age_arr)
 
 duration_arr = np.asarray(data['duration'])
-duration_arr = (( (duration_arr - duration_arr.min()) / (duration_arr.max() - duration_arr.min()) )*2 - 1)[:,np.newaxis]
+duration_arr = normalize(duration_arr)
 
 campaign_arr = np.asarray(data['campaign'])
-campaign_arr = (( (campaign_arr - campaign_arr.min()) / (campaign_arr.max() - campaign_arr.min()) )*2 - 1)[:,np.newaxis]
+campaign_arr = normalize(campaign_arr)
 
 pdays_arr = np.asarray(data['pdays'])
 ind = np.asarray(pdays_arr == 999)
 pdays_mean = np.mean(pdays_arr[np.invert(ind)])
 pdays_arr[ind] = pdays_mean
-pdays_arr = (( (pdays_arr - pdays_arr.min()) / (pdays_arr.max() - pdays_arr.min()) )*2 - 1)[:,np.newaxis]
+pdays_arr = normalize(pdays_arr)
 
 previous_arr = np.asarray(data['previous'])
-previous_arr = (( (previous_arr - previous_arr.min()) / (previous_arr.max() - previous_arr.min()) )*2 - 1)[:,np.newaxis]
+previous_arr = normalize(previous_arr)
 
 emp_var_rate_arr = np.asarray(data['emp.var.rate'])
-emp_var_rate_arr = (( (emp_var_rate_arr - emp_var_rate_arr.min()) / (emp_var_rate_arr.max() - emp_var_rate_arr.min()) )*2 - 1)[:,np.newaxis]
+emp_var_rate_arr = normalize(emp_var_rate_arr)
 
 cons_price_idx_arr = np.asarray(data['cons.price.idx'])
-cons_price_idx_arr = (( (cons_price_idx_arr - cons_price_idx_arr.min()) / (cons_price_idx_arr.max() - cons_price_idx_arr.min()) )*2 - 1)[:,np.newaxis]
+cons_price_idx_arr = normalize(cons_price_idx_arr)
 
 cons_conf_idx_arr = np.asarray(data['cons.conf.idx'])
-cons_conf_idx_arr = (( (cons_conf_idx_arr - cons_conf_idx_arr.min()) / (cons_conf_idx_arr.max() - cons_conf_idx_arr.min()) )*2 - 1)[:,np.newaxis]
+cons_conf_idx_arr = normalize(cons_conf_idx_arr)
 
 euribor3m_arr = np.asarray(data['euribor3m'])
-euribor3m_arr = (( (euribor3m_arr - euribor3m_arr.min()) / (euribor3m_arr.max() - euribor3m_arr.min()) )*2 - 1)[:,np.newaxis]
+euribor3m_arr = normalize(euribor3m_arr)
 
 nr_employed_arr = np.asarray(data['nr.employed'])
-nr_employed_arr = (( (nr_employed_arr - nr_employed_arr.min()) / (nr_employed_arr.max() - nr_employed_arr.min()) )*2 - 1)[:,np.newaxis]
+nr_employed_arr = normalize(nr_employed_arr)
 
 
 job_arr = []
@@ -170,12 +171,14 @@ poutcome_arr = np.asarray(poutcome_arr)
 num_data_arr = np.hstack((age_arr, duration_arr, campaign_arr, pdays_arr, previous_arr, emp_var_rate_arr, cons_price_idx_arr, 
 	cons_conf_idx_arr, euribor3m_arr, nr_employed_arr))
 
-# pca = PCA(n_components=4, svd_solver='full')
+# pca = PCA(n_components=6, svd_solver='full')
 # num_data_arr = pca.fit_transform(num_data_arr)
 # # pca.fit(num_data_arr)
 # cum_sum = np.cumsum(pca.explained_variance_ratio_)
 # print(cum_sum)
 
+print(num_data_arr.shape)
+print(job_arr.shape)
 
 data_arr = np.hstack((num_data_arr, job_arr, marital_arr, education_arr, default_arr, housing_arr, 
 	loan_arr, contact_arr, month_arr, day_of_week_arr, poutcome_arr))
@@ -188,7 +191,7 @@ X_test = data_arr[num_train:,:]
 
 print(X_test.shape)
 
-out_file = os.path.join(data_dir, 'X_test.npy')
+out_file = os.path.join(data_dir, 'X_test_num_pca.npy')
 np.save(out_file, X_test)
 
 print('Test data size: ' + str(X_test.shape))
@@ -267,19 +270,19 @@ for i in range(num_folds):
 	print('Train data size in fold' + str(i) + ': ' + str(temp_X_train.shape))
 	print('Train label size in fold' + str(i) + ': ' + str(temp_Y_train.shape))
 
-	out_file = os.path.join(data_dir, 'X_train_fold' + str(i) + '.npy')
+	out_file = os.path.join(data_dir, 'X_train_num_pca_fold' + str(i) + '.npy')
 	np.save(out_file, temp_X_train)
 
-	out_file = os.path.join(data_dir, 'Y_train_fold' + str(i) + '.npy')
+	out_file = os.path.join(data_dir, 'Y_train_num_pca_fold' + str(i) + '.npy')
 	np.save(out_file, temp_Y_train)
 
-	out_file = os.path.join(data_dir, 'X_validation_fold' + str(i) + '.npy')
+	out_file = os.path.join(data_dir, 'X_validation_num_pca_fold' + str(i) + '.npy')
 	np.save(out_file, temp_X_validation)
 
-	out_file = os.path.join(data_dir, 'Y_validation_fold' + str(i) + '.npy')
+	out_file = os.path.join(data_dir, 'Y_validation_num_pca_fold' + str(i) + '.npy')
 	np.save(out_file, temp_Y_validation)
 
-	csv_filename = os.path.join(data_dir, 'Y_validation_fold' + str(i) + '.txt')
+	csv_filename = os.path.join(data_dir, 'Y_validation_num_pca_fold' + str(i) + '.txt')
 	np.savetxt(csv_filename, temp_Y_validation, delimiter=',')
 	
 

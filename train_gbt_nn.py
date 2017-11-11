@@ -8,25 +8,55 @@ import tensorflow as tf
 import csv
 from sklearn.metrics import matthews_corrcoef
 from sklearn.metrics import confusion_matrix
+from sklearn.ensemble import (RandomTreesEmbedding, RandomForestClassifier, GradientBoostingClassifier)
+from sklearn.preprocessing import OneHotEncoder
 
 data_dir = '/Users/mustafauo/Dropbox/NUS_Academic/NUS_2017_2018_1/CS5228/Banking_Project/Python_Code/'
 
-out_file = os.path.join(data_dir, 'X_train_fold0.npy')
-X_train = np.load(out_file)
+out_file = os.path.join(data_dir, 'X_train_num_pca_fold0.npy')
+X_train = np.load(out_file).astype(np.float32)
 
-out_file = os.path.join(data_dir, 'Y_train_fold0.npy')
+
+out_file = os.path.join(data_dir, 'Y_train_num_pca_fold0.npy')
 Y_train = np.load(out_file)
 
-out_file = os.path.join(data_dir, 'X_validation_fold0.npy')
-X_validation = np.load(out_file)
+out_file = os.path.join(data_dir, 'X_validation_num_pca_fold0.npy')
+X_validation = np.load(out_file).astype(np.float32)
+# X_validation_num_pca = X_validation[:,:10]
+# X_validation_cat = X_validation[:,10:]
 
-out_file = os.path.join(data_dir, 'Y_validation_fold0.npy')
+out_file = os.path.join(data_dir, 'Y_validation_num_pca_fold0.npy')
 Y_validation = np.load(out_file)
 
-print('Training Data Shape: ' + str(X_train.shape) + '; Training Data Type: ' + str(X_train.dtype) )
-print('Training Label Shape: ' + str(Y_train.shape) + '; Training Label Type: ' + str(Y_train.dtype) )
-print('Validation Data Shape: ' + str(X_validation.shape) + '; Validation Data Type: ' + str(X_validation.dtype) )
-print('Validation Label Shape: ' + str(Y_validation.shape) + '; Validation Label Type: ' + str(Y_validation.dtype) )
+
+out_file = os.path.join(data_dir, 'X_test_num_pca.npy')
+X_test = np.load(out_file).astype(np.float32)
+
+
+print('Training Data Shape: ' + str(X_train.shape) + '; Training Data Type: ' + str(X_train.dtype) + '; Data Structure: ' + str(type(X_train)) )
+print('Training Label Shape: ' + str(Y_train.shape) + '; Training Label Type: ' + str(Y_train.dtype) + '; Data Structure: ' + str(type(Y_train)))
+print('Validation Data Shape: ' + str(X_validation.shape) + '; Validation Data Type: ' + str(X_validation.dtype) + '; Data Structure: ' + str(type(X_validation)))
+print('Validation Label Shape: ' + str(Y_validation.shape) + '; Validation Label Type: ' + str(Y_validation.dtype) + '; Data Structure: ' + str(type(Y_validation)))
+
+n_estimator = 30
+num_numeric=0
+grd = GradientBoostingClassifier(loss='exponential',n_estimators=n_estimator, min_samples_leaf=20)
+grd_enc = OneHotEncoder()
+grd.fit(X_train[:,num_numeric:], np.argmax(Y_train, axis=1) )
+grd_enc.fit(grd.apply(X_train[:,num_numeric:])[:, :, 0])
+X_train = np.hstack( (X_train[:,:num_numeric] , np.asarray(grd_enc.transform(grd.apply(X_train[:,num_numeric:])[:, :, 0]).toarray(),dtype=np.float32)))
+X_validation = np.hstack( (X_validation[:,:num_numeric], np.asarray(grd_enc.transform(grd.apply(X_validation[:,num_numeric:])[:, :, 0]).toarray(),dtype=np.float32)))
+
+print(np.amax(np.sum(X_validation,axis=1)))
+
+X_test = np.hstack( (X_test[:,:num_numeric] , np.asarray(grd_enc.transform(grd.apply(X_test[:,num_numeric:])[:, :, 0]).toarray(),dtype=np.float32)))
+
+print('Training Data Shape: ' + str(X_train.shape) + '; Training Data Type: ' + str(X_train.dtype) + '; Data Structure: ' + str(type(X_train)) )
+print('Training Label Shape: ' + str(Y_train.shape) + '; Training Label Type: ' + str(Y_train.dtype) + '; Data Structure: ' + str(type(Y_train)))
+print('Validation Data Shape: ' + str(X_validation.shape) + '; Validation Data Type: ' + str(X_validation.dtype) + '; Data Structure: ' + str(type(X_validation)))
+print('Validation Label Shape: ' + str(Y_validation.shape) + '; Validation Label Type: ' + str(Y_validation.dtype) + '; Data Structure: ' + str(type(Y_validation)))
+
+
 
 num_train_samples = X_train.shape[0]
 
@@ -45,24 +75,6 @@ batch_no_neg = 0
 np.random.shuffle(indeces_pos)
 np.random.shuffle(indeces_neg)
 
-# Parameters
-learning_rate = 0.001
-training_epochs = 1000
-batch_size = 128
-half_batch_size = int(batch_size/2)
-pos_batch_size = int(batch_size/2)
-neg_batch_size = int(batch_size/2)
-display_step = 1
-
-# Network Parameters
-n_input = X_train.shape[1]
-n_classes = Y_train.shape[1]
-n_hidden_1 = 16 # 1st layer number of neurons
-n_hidden_2 = 4 # 2nd layer number of neurons
-
-def update_learning_rate():
-	global learning_rate
-	learning_rate = 0.95 * learning_rate
 
 def next_epoch(class_label='both'):
 	global batch_no_pos
@@ -135,21 +147,39 @@ def write_to_csv_file(filepath, data_dict):
 
 	f_filepath.close()
 
-# for epoch in range(training_epochs):
-# 	next_epoch()
-# 	avg_cost = 0.
-# 	total_batch = int(num_train_samples/batch_size)
-# 	# Loop over all batches
-# 	for i in range(total_batch):
-# 		batch_x, batch_y = next_batch()
-# 	# Display logs per epoch step
-# 	if epoch % display_step == 0:
-# 		print('Epoch:', '%04d' % (epoch+1), 'cost={:.9f}'.format(avg_cost))
-# print('Optimization Finished!')
+
+def write_to_csv_file2(filepath, data):
+
+	with open(filepath,'a') as f_filepath:
+		wr = csv.writer(f_filepath, dialect='excel')
+		wr.writerow(['id','prediction'])
+		for i in range(data.size):
+			wr.writerow([i,data[i]])
+
+	f_filepath.close()
 
 def weight_init(fan_in, fan_out):
 		std = np.sqrt(2/fan_in)
 		return (std * np.random.randn(fan_in, fan_out)).astype(np.float32)
+
+def update_learning_rate():
+	global learning_rate
+	learning_rate = 0.95 * learning_rate
+
+# Parameters
+learning_rate = 0.001
+training_epochs = 100
+batch_size = 256
+half_batch_size = int(batch_size/2)
+pos_batch_size = int(batch_size/4)
+neg_batch_size = 3*int(batch_size/4)
+display_step = 1
+
+# Network Parameters
+n_input = X_train.shape[1]
+n_classes = Y_train.shape[1]
+n_hidden_1 = 16 # 1st layer number of neurons
+n_hidden_2 = 4 # 2nd layer number of neurons
 
 # tf Graph input
 X = tf.placeholder(tf.float32, [None, n_input])
@@ -183,7 +213,7 @@ logits = tf.matmul(layer_2_states, weights['out']) + biases['out']
 pred = tf.nn.softmax(logits)
 
 # Define loss and optimizer
-optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
+optimizer = tf.train.AdamOptimizer(learning_rate=lr_rate)
 loss_op = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=logits, labels=Y))
 train_op = optimizer.minimize(loss_op)
 
@@ -205,7 +235,7 @@ with tf.Session() as sess:
 	for epoch in range(training_epochs):
 		next_epoch(class_label='both')
 		avg_cost = 0.
-		total_batch = int(num_train_samples_neg/half_batch_size)
+		total_batch = int(num_train_samples_neg/neg_batch_size)
 		# Loop over all batches
 		for i in range(total_batch):
 			batch_x, batch_y = next_batch()
@@ -217,24 +247,24 @@ with tf.Session() as sess:
 			train_loss, train_pred = sess.run([loss_op, pred], feed_dict={X: X_train, Y: Y_train})
 			train_loss_history.append(train_loss)
 			
-			train_accuracy = (np.argmax(train_pred,axis=1) == np.argmax(Y_train,axis=1)).mean()
+			thrshld = 0.5
+			train_pred_label = (train_pred[:,1] > thrshld).astype(int)
+			train_accuracy = (train_pred_label == np.argmax(Y_train,axis=1)).mean()
 			train_acc_history.append(train_accuracy)
 
-			mcc_train = matthews_corrcoef(np.argmax(Y_train,axis=1),np.argmax(train_pred,axis=1))
+			mcc_train = matthews_corrcoef(np.argmax(Y_train,axis=1),train_pred_label)
 
-			validation_loss, validation_pred = sess.run([loss_op, pred], feed_dict={X: X_validation, Y: Y_validation, lr_rate: learning_rate})
+			validation_loss, validation_pred = sess.run([loss_op, pred], feed_dict={X: X_validation, Y: Y_validation})
 			validation_loss_history.append(validation_loss)
 
-			validation_accuracy = (np.argmax(validation_pred,axis=1) == np.argmax(Y_validation,axis=1)).mean()
+			validation_pred_label = (validation_pred[:,1] > thrshld).astype(int)
+			validation_accuracy = (validation_pred_label == np.argmax(Y_validation,axis=1)).mean()
 			validation_acc_history.append(validation_accuracy)
 
-			mcc_validation = matthews_corrcoef(np.argmax(Y_validation,axis=1),np.argmax(validation_pred,axis=1))
-			conf_validation = confusion_matrix(np.argmax(Y_validation,axis=1),np.argmax(validation_pred,axis=1))
+			mcc_validation = matthews_corrcoef(np.argmax(Y_validation,axis=1),validation_pred_label)
+			conf_validation = confusion_matrix(np.argmax(Y_validation,axis=1),validation_pred_label)
 
-			# print('Epoch ' + str((epoch+1)) + '/' + str(training_epochs) + ': loss in training set ' + str(train_loss)
-			# 	+ ', validation set ' + str(validation_loss) + '; Acc in training set ' + str(train_accuracy)
-			# 	+ ', in validation set ' + str(validation_accuracy) + '; MCC in training set ' + str(mcc_train)
-			# 	+ ', in validation set ' + str(mcc_validation) )
+
 			print('Epoch %d/%d: loss in training set %5.3f, validation set %5.3f; Acc in training set %5.3f, in validation set %5.3f; MCC in training set %5.3f, in validation set %5.3f'
 			 % ((epoch+1), training_epochs, train_loss, validation_loss, train_accuracy, validation_accuracy, mcc_train,mcc_validation) )
 
@@ -244,10 +274,16 @@ with tf.Session() as sess:
 			if (round(validation_loss,3) < round(min_val_loss,3)):
 				max_val_acc = validation_accuracy
 				min_val_loss = validation_loss
-				
-				model_filepath = os.path.join(data_dir, 'best_model.ckpt')
+
+				model_filepath = os.path.join(data_dir, 'best_model_gbt_nn_pca' + '.ckpt')
 
 				saver.save(sess, model_filepath)
+
+				csv_filename = os.path.join(data_dir, 'gbt_nn_pca_validation_pred' + '.txt')
+
+				np.savetxt(csv_filename, validation_pred, delimiter=',')
+
+
 			
 			# if (round(mcc_validation,3) > round(max_val_mcc,3)):
 			# 	max_val_mcc = mcc_validation
@@ -257,8 +293,8 @@ with tf.Session() as sess:
 			# 	saver.save(sess, model_filepath)
 
 		# Update learning rate
-		# if epoch % 10 == 0:
-		# 	update_learning_rate()
+		# if epoch % 20 == 0:
+		update_learning_rate()
 
 
 	stats = { 'train_loss_history': train_loss_history,
@@ -266,38 +302,23 @@ with tf.Session() as sess:
 	'train_acc_history': train_acc_history,
 	'validation_acc_history': validation_acc_history}
 
-	stats_filepath = os.path.join(data_dir, 'model_pca24_' + str(n_hidden_1) + '_' + str(n_hidden_2) + '_loss_acc_history_' 
-		+ str(datetime.now()).split('.')[0] + '.csv')
+	stats_filepath = os.path.join(data_dir, 'gbt_nn_pca_loss_acc_history.csv')
 	write_to_csv_file(filepath=stats_filepath, data_dict=stats)
 
+	model_filepath = os.path.join(data_dir, 'best_model_gbt_nn_pca' + '.ckpt')
+	saver.restore(sess, model_filepath)
+	
+	Random_label = np.zeros((X_test.shape[0],2))
 
+	test_pred = sess.run([pred], feed_dict={X: X_test, Y: Random_label})
+	test_pred = np.asarray(test_pred)[0,:,:]
+	print(test_pred.shape)
+	test_labels = np.argmax(test_pred,axis=1)
+	print(np.mean(test_labels))
 
+	submission_filepath = os.path.join(data_dir, 'submission_gbt_nn_pca.csv')
+	write_to_csv_file2(filepath=submission_filepath, data=test_labels)
 
-	# # Plot the loss function and train / test accuracies
-	# fig = plt.figure()
-	# plt.subplot(2, 1, 1)
-	# plt.plot(train_loss_history, label='train')
-	# plt.plot(validation_loss_history, label='validation')
-	# plt.title('Loss history')
-	# plt.xlabel('Epoch')
-	# plt.ylabel('Loss')
-	# plt.legend()
-	# plt.grid(b=True, linestyle='-.')
-
-	# plt.subplot(2, 1, 2)
-	# plt.plot(train_acc_history, label='train')
-	# plt.plot(validation_acc_history, label='validation')
-	# plt.title('Classification accuracy history')
-	# plt.xlabel('Epoch')
-	# plt.ylabel('Clasification accuracy')
-	# plt.legend()
-	# plt.grid(b=True, linestyle='-.')
-
-	# plt.tight_layout(pad=1.0)
-
-	# fig.savefig( ('loss_vs_epoch_and_acc_vs_epoch_nn1_' + str(datetime.now()).split('.')[0] + '.png') , bbox_inches = 'tight')
-
-	# # plt.show()
 
 
 

@@ -13,15 +13,23 @@ data_dir = '/Users/mustafauo/Dropbox/NUS_Academic/NUS_2017_2018_1/CS5228/Banking
 
 out_file = os.path.join(data_dir, 'X_train_fold0.npy')
 X_train = np.load(out_file)
+# X_train_num = X_train[:,:10]
+# X_train_cat = X_train[:,10:]
+
 
 out_file = os.path.join(data_dir, 'Y_train_fold0.npy')
 Y_train = np.load(out_file)
 
 out_file = os.path.join(data_dir, 'X_validation_fold0.npy')
 X_validation = np.load(out_file)
+# X_validation_num = X_validation[:,:10]
+# X_validation_cat = X_validation[:,10:]
 
 out_file = os.path.join(data_dir, 'Y_validation_fold0.npy')
 Y_validation = np.load(out_file)
+
+# csv_filename = os.path.join(data_dir, 'Y_validation' + '.txt')
+# np.savetxt(csv_filename, Y_validation, delimiter=',')
 
 print('Training Data Shape: ' + str(X_train.shape) + '; Training Data Type: ' + str(X_train.dtype) )
 print('Training Label Shape: ' + str(Y_train.shape) + '; Training Label Type: ' + str(Y_train.dtype) )
@@ -45,24 +53,6 @@ batch_no_neg = 0
 np.random.shuffle(indeces_pos)
 np.random.shuffle(indeces_neg)
 
-# Parameters
-learning_rate = 0.001
-training_epochs = 1000
-batch_size = 128
-half_batch_size = int(batch_size/2)
-pos_batch_size = int(batch_size/2)
-neg_batch_size = int(batch_size/2)
-display_step = 1
-
-# Network Parameters
-n_input = X_train.shape[1]
-n_classes = Y_train.shape[1]
-n_hidden_1 = 16 # 1st layer number of neurons
-n_hidden_2 = 4 # 2nd layer number of neurons
-
-def update_learning_rate():
-	global learning_rate
-	learning_rate = 0.95 * learning_rate
 
 def next_epoch(class_label='both'):
 	global batch_no_pos
@@ -151,6 +141,26 @@ def weight_init(fan_in, fan_out):
 		std = np.sqrt(2/fan_in)
 		return (std * np.random.randn(fan_in, fan_out)).astype(np.float32)
 
+def update_learning_rate():
+	global learning_rate
+	learning_rate = 0.95 * learning_rate
+
+# Parameters
+learning_rate = 0.001
+training_epochs = 1000
+batch_size = 128
+half_batch_size = int(batch_size/2)
+pos_batch_size = int(batch_size/3)
+neg_batch_size = 2*int(batch_size/3)
+display_step = 1
+
+# Network Parameters
+n_input = X_train.shape[1]
+n_classes = Y_train.shape[1]
+n_hidden_1 = 16 # 1st layer number of neurons
+n_hidden_2 = 4 # 2nd layer number of neurons
+# n_hidden_3 = 2 # 3rd layer number of neurons
+
 # tf Graph input
 X = tf.placeholder(tf.float32, [None, n_input])
 Y = tf.placeholder(tf.float32, [None, n_classes])
@@ -158,13 +168,19 @@ lr_rate = tf.placeholder(tf.float32)
 
 # Store layers weight & bias
 weights = {
-    'h1': tf.Variable(weight_init(n_input, n_hidden_1)),
+	'h_cat': tf.Variable(weight_init(47, 10)),
+	'h_num': tf.Variable(weight_init(10, 10)),
+    'h1': tf.Variable(weight_init(20, n_hidden_1)),
     'h2': tf.Variable(weight_init(n_hidden_1, n_hidden_2)),
+    # 'h3': tf.Variable(weight_init(n_hidden_2, n_hidden_3)),
     'out': tf.Variable(weight_init(n_hidden_2, n_classes))
 }
 biases = {
+	'b_cat': tf.Variable(np.zeros(10).astype(np.float32)),
+	'b_num': tf.Variable(np.zeros(10).astype(np.float32)),
     'b1': tf.Variable(np.zeros(n_hidden_1).astype(np.float32)),
     'b2': tf.Variable(np.zeros(n_hidden_2).astype(np.float32)),
+    # 'b3': tf.Variable(np.zeros(n_hidden_3).astype(np.float32)),
     'out': tf.Variable(np.zeros(n_classes).astype(np.float32))
 }
 
@@ -173,18 +189,26 @@ biases = {
 # Hidden fully connected layer with 256 neurons
 print('X shape:' + str(X.shape) + ': X type:' + str(X.dtype))
 print('Weights shape:' + str(weights['h1'].shape) + ': Weights type:' + str(weights['h1'].dtype))
-layer_1_scores = tf.add(tf.matmul(X, weights['h1']), biases['b1'])
+layer_cat_scores = tf.add(tf.matmul(X[:,10:], weights['h_cat']), biases['b_cat'])
+layer_cat_states = tf.nn.tanh(layer_cat_scores)
+layer_num_scores = tf.add(tf.matmul(X[:,:10], weights['h_num']), biases['b_num'])
+layer_num_states = tf.nn.tanh(layer_num_scores)
+layer_1_scores = tf.add(tf.matmul(tf.concat([layer_num_states, layer_cat_states], 1), weights['h1']), biases['b1'])
 layer_1_states = tf.nn.relu(layer_1_scores)
 # Hidden fully connected layer with 256 neurons
 layer_2_scores = tf.add(tf.matmul(layer_1_states, weights['h2']), biases['b2'])
 layer_2_states = tf.nn.relu(layer_2_scores)
+# Hidden fully connected layer with 256 neurons
+# layer_3_scores = tf.add(tf.matmul(layer_2_states, weights['h3']), biases['b3'])
+# layer_3_states = tf.nn.relu(layer_3_scores)
 # Output fully connected layer with a neuron for each class
 logits = tf.matmul(layer_2_states, weights['out']) + biases['out']
 pred = tf.nn.softmax(logits)
 
 # Define loss and optimizer
-optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
+optimizer = tf.train.AdamOptimizer(learning_rate=lr_rate)
 loss_op = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=logits, labels=Y))
+# loss_op = tf.reduce_mean(tf.nn.weighted_cross_entropy_with_logits(logits=logits, targets=Y, pos_weight=1.5))
 train_op = optimizer.minimize(loss_op)
 
 train_loss_history = []
@@ -205,7 +229,7 @@ with tf.Session() as sess:
 	for epoch in range(training_epochs):
 		next_epoch(class_label='both')
 		avg_cost = 0.
-		total_batch = int(num_train_samples_neg/half_batch_size)
+		total_batch = int(num_train_samples_neg/neg_batch_size)
 		# Loop over all batches
 		for i in range(total_batch):
 			batch_x, batch_y = next_batch()
@@ -217,19 +241,22 @@ with tf.Session() as sess:
 			train_loss, train_pred = sess.run([loss_op, pred], feed_dict={X: X_train, Y: Y_train})
 			train_loss_history.append(train_loss)
 			
-			train_accuracy = (np.argmax(train_pred,axis=1) == np.argmax(Y_train,axis=1)).mean()
+			thrshld = 0.5
+			train_pred_label = (train_pred[:,1] > thrshld).astype(int)
+			train_accuracy = (train_pred_label == np.argmax(Y_train,axis=1)).mean()
 			train_acc_history.append(train_accuracy)
 
-			mcc_train = matthews_corrcoef(np.argmax(Y_train,axis=1),np.argmax(train_pred,axis=1))
+			mcc_train = matthews_corrcoef(np.argmax(Y_train,axis=1),train_pred_label)
 
-			validation_loss, validation_pred = sess.run([loss_op, pred], feed_dict={X: X_validation, Y: Y_validation, lr_rate: learning_rate})
+			validation_loss, validation_pred = sess.run([loss_op, pred], feed_dict={X: X_validation, Y: Y_validation})
 			validation_loss_history.append(validation_loss)
 
-			validation_accuracy = (np.argmax(validation_pred,axis=1) == np.argmax(Y_validation,axis=1)).mean()
+			validation_pred_label = (validation_pred[:,1] > thrshld).astype(int)
+			validation_accuracy = (validation_pred_label == np.argmax(Y_validation,axis=1)).mean()
 			validation_acc_history.append(validation_accuracy)
 
-			mcc_validation = matthews_corrcoef(np.argmax(Y_validation,axis=1),np.argmax(validation_pred,axis=1))
-			conf_validation = confusion_matrix(np.argmax(Y_validation,axis=1),np.argmax(validation_pred,axis=1))
+			mcc_validation = matthews_corrcoef(np.argmax(Y_validation,axis=1),validation_pred_label)
+			conf_validation = confusion_matrix(np.argmax(Y_validation,axis=1),validation_pred_label)
 
 			# print('Epoch ' + str((epoch+1)) + '/' + str(training_epochs) + ': loss in training set ' + str(train_loss)
 			# 	+ ', validation set ' + str(validation_loss) + '; Acc in training set ' + str(train_accuracy)
@@ -245,9 +272,19 @@ with tf.Session() as sess:
 				max_val_acc = validation_accuracy
 				min_val_loss = validation_loss
 				
-				model_filepath = os.path.join(data_dir, 'best_model.ckpt')
+				# model_filepath = os.path.join(data_dir, 'model_' + str(n_hidden_1) + '_' + str(n_hidden_2) + '_val_acc_' 
+				# 	+ str(round(validation_accuracy,3)) + '_val_loss_' + str(round(validation_loss,3))  + '_' 
+				# 	+ str(datetime.now()).split('.')[0] + '.ckpt')
+
+				model_filepath = os.path.join(data_dir, 'best_model_nn3_2branch' + '.ckpt')
 
 				saver.save(sess, model_filepath)
+
+				csv_filename = os.path.join(data_dir, 'nn3_validation_pred' + '.txt')
+
+				np.savetxt(csv_filename, validation_pred, delimiter=',')
+
+
 			
 			# if (round(mcc_validation,3) > round(max_val_mcc,3)):
 			# 	max_val_mcc = mcc_validation
@@ -257,8 +294,8 @@ with tf.Session() as sess:
 			# 	saver.save(sess, model_filepath)
 
 		# Update learning rate
-		# if epoch % 10 == 0:
-		# 	update_learning_rate()
+		# if epoch % 20 == 0:
+		update_learning_rate()
 
 
 	stats = { 'train_loss_history': train_loss_history,
@@ -266,8 +303,7 @@ with tf.Session() as sess:
 	'train_acc_history': train_acc_history,
 	'validation_acc_history': validation_acc_history}
 
-	stats_filepath = os.path.join(data_dir, 'model_pca24_' + str(n_hidden_1) + '_' + str(n_hidden_2) + '_loss_acc_history_' 
-		+ str(datetime.now()).split('.')[0] + '.csv')
+	stats_filepath = os.path.join(data_dir, 'model_loss_acc_history.csv')
 	write_to_csv_file(filepath=stats_filepath, data_dict=stats)
 
 

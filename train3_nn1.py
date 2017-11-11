@@ -7,20 +7,19 @@ from datetime import datetime
 import tensorflow as tf
 import csv
 from sklearn.metrics import matthews_corrcoef
-from sklearn.metrics import confusion_matrix
 
 data_dir = '/Users/mustafauo/Dropbox/NUS_Academic/NUS_2017_2018_1/CS5228/Banking_Project/Python_Code/'
 
-out_file = os.path.join(data_dir, 'X_train_fold0.npy')
+out_file = os.path.join(data_dir, 'X_train_fold0_pca24.npy')
 X_train = np.load(out_file)
 
-out_file = os.path.join(data_dir, 'Y_train_fold0.npy')
+out_file = os.path.join(data_dir, 'Y_train_fold0_pca24.npy')
 Y_train = np.load(out_file)
 
-out_file = os.path.join(data_dir, 'X_validation_fold0.npy')
+out_file = os.path.join(data_dir, 'X_validation_fold0_pca24.npy')
 X_validation = np.load(out_file)
 
-out_file = os.path.join(data_dir, 'Y_validation_fold0.npy')
+out_file = os.path.join(data_dir, 'Y_validation_fold0_pca24.npy')
 Y_validation = np.load(out_file)
 
 print('Training Data Shape: ' + str(X_train.shape) + '; Training Data Type: ' + str(X_train.dtype) )
@@ -50,14 +49,13 @@ learning_rate = 0.001
 training_epochs = 1000
 batch_size = 128
 half_batch_size = int(batch_size/2)
-pos_batch_size = int(batch_size/2)
-neg_batch_size = int(batch_size/2)
 display_step = 1
+dropout_keep_prob = 0.8
 
 # Network Parameters
 n_input = X_train.shape[1]
 n_classes = Y_train.shape[1]
-n_hidden_1 = 16 # 1st layer number of neurons
+n_hidden_1 = 128 # 1st layer number of neurons
 n_hidden_2 = 4 # 2nd layer number of neurons
 
 def update_learning_rate():
@@ -87,13 +85,13 @@ def next_batch():
 
 	mask = np.zeros(num_train_samples, dtype=bool)
 	
-	end = (batch_no_pos+1)*pos_batch_size
+	end = (batch_no_pos+1)*half_batch_size
 	if  end > num_train_samples_pos:
 		next_epoch(class_label='pos')
 		batch_no_pos = 0
-		end = (batch_no_pos+1)*pos_batch_size
+		end = (batch_no_pos+1)*half_batch_size
 
-	start = batch_no_pos*pos_batch_size
+	start = batch_no_pos*half_batch_size
 
 	batch_no_pos += 1
 	
@@ -105,13 +103,13 @@ def next_batch():
 
 	mask = np.zeros(num_train_samples, dtype=bool)
 	
-	end = (batch_no_neg+1)*neg_batch_size
+	end = (batch_no_neg+1)*half_batch_size
 	if  end > num_train_samples_neg:
 		next_epoch(class_label='neg')
 		batch_no_neg = 0
-		end = (batch_no_neg+1)*neg_batch_size
+		end = (batch_no_neg+1)*half_batch_size
 
-	start = batch_no_neg*neg_batch_size
+	start = batch_no_neg*half_batch_size
 
 	batch_no_neg += 1
 	
@@ -155,6 +153,7 @@ def weight_init(fan_in, fan_out):
 X = tf.placeholder(tf.float32, [None, n_input])
 Y = tf.placeholder(tf.float32, [None, n_classes])
 lr_rate = tf.placeholder(tf.float32)
+dropout_keep_p = tf.placeholder(tf.float32)
 
 # Store layers weight & bias
 weights = {
@@ -174,7 +173,7 @@ biases = {
 print('X shape:' + str(X.shape) + ': X type:' + str(X.dtype))
 print('Weights shape:' + str(weights['h1'].shape) + ': Weights type:' + str(weights['h1'].dtype))
 layer_1_scores = tf.add(tf.matmul(X, weights['h1']), biases['b1'])
-layer_1_states = tf.nn.relu(layer_1_scores)
+layer_1_states = tf.nn.dropout(tf.nn.relu(layer_1_scores),dropout_keep_p)
 # Hidden fully connected layer with 256 neurons
 layer_2_scores = tf.add(tf.matmul(layer_1_states, weights['h2']), biases['b2'])
 layer_2_states = tf.nn.relu(layer_2_scores)
@@ -193,7 +192,6 @@ train_acc_history = []
 validation_acc_history = []
 max_val_acc = 0
 min_val_loss = 10000
-max_val_mcc = 0
 
 init = tf.global_variables_initializer()
 saver = tf.train.Saver()
@@ -210,11 +208,11 @@ with tf.Session() as sess:
 		for i in range(total_batch):
 			batch_x, batch_y = next_batch()
 			# Run optimization op (backprop) and cost op (to get loss value)
-			_ = sess.run([train_op], feed_dict={X: batch_x, Y: batch_y, lr_rate: learning_rate})
+			_ = sess.run([train_op], feed_dict={X: batch_x, Y: batch_y, dropout_keep_p:0.5})
 
 		# Display logs per epoch step
 		if epoch % display_step == 0:
-			train_loss, train_pred = sess.run([loss_op, pred], feed_dict={X: X_train, Y: Y_train})
+			train_loss, train_pred = sess.run([loss_op, pred], feed_dict={X: X_train, Y: Y_train, dropout_keep_p:1.0})
 			train_loss_history.append(train_loss)
 			
 			train_accuracy = (np.argmax(train_pred,axis=1) == np.argmax(Y_train,axis=1)).mean()
@@ -222,39 +220,31 @@ with tf.Session() as sess:
 
 			mcc_train = matthews_corrcoef(np.argmax(Y_train,axis=1),np.argmax(train_pred,axis=1))
 
-			validation_loss, validation_pred = sess.run([loss_op, pred], feed_dict={X: X_validation, Y: Y_validation, lr_rate: learning_rate})
+			validation_loss, validation_pred = sess.run([loss_op, pred], feed_dict={X: X_validation, Y: Y_validation, dropout_keep_p:1.0})
 			validation_loss_history.append(validation_loss)
 
 			validation_accuracy = (np.argmax(validation_pred,axis=1) == np.argmax(Y_validation,axis=1)).mean()
 			validation_acc_history.append(validation_accuracy)
 
 			mcc_validation = matthews_corrcoef(np.argmax(Y_validation,axis=1),np.argmax(validation_pred,axis=1))
-			conf_validation = confusion_matrix(np.argmax(Y_validation,axis=1),np.argmax(validation_pred,axis=1))
 
 			# print('Epoch ' + str((epoch+1)) + '/' + str(training_epochs) + ': loss in training set ' + str(train_loss)
 			# 	+ ', validation set ' + str(validation_loss) + '; Acc in training set ' + str(train_accuracy)
 			# 	+ ', in validation set ' + str(validation_accuracy) + '; MCC in training set ' + str(mcc_train)
 			# 	+ ', in validation set ' + str(mcc_validation) )
+
 			print('Epoch %d/%d: loss in training set %5.3f, validation set %5.3f; Acc in training set %5.3f, in validation set %5.3f; MCC in training set %5.3f, in validation set %5.3f'
 			 % ((epoch+1), training_epochs, train_loss, validation_loss, train_accuracy, validation_accuracy, mcc_train,mcc_validation) )
 
-			print(conf_validation)
 
-			# if (round(validation_accuracy,3) > round(max_val_acc,3)) and (round(validation_loss,3) < round(min_val_loss,3)):
-			if (round(validation_loss,3) < round(min_val_loss,3)):
+			if (round(validation_accuracy,3) > round(max_val_acc,3)) and (round(validation_loss,3) < round(min_val_loss,3)):
 				max_val_acc = validation_accuracy
 				min_val_loss = validation_loss
-				
-				model_filepath = os.path.join(data_dir, 'best_model.ckpt')
 
+				model_filepath = os.path.join(data_dir, 'model_' + str(n_hidden_1) + '_' + str(n_hidden_2) + '_val_acc_' 
+					+ str(round(validation_accuracy,3)) + '_val_loss_' + str(round(validation_loss,3))  + '_' 
+					+ str(datetime.now()).split('.')[0] + '.ckpt')
 				saver.save(sess, model_filepath)
-			
-			# if (round(mcc_validation,3) > round(max_val_mcc,3)):
-			# 	max_val_mcc = mcc_validation
-				
-			# 	model_filepath = os.path.join(data_dir, 'model_' + str(n_hidden_1) + '_' + str(n_hidden_2) + '_val_mcc_' 
-			# 		+ str(round(mcc_validation,3))  + '_' + str(datetime.now()).split('.')[0] + '.ckpt')
-			# 	saver.save(sess, model_filepath)
 
 		# Update learning rate
 		# if epoch % 10 == 0:
@@ -266,7 +256,7 @@ with tf.Session() as sess:
 	'train_acc_history': train_acc_history,
 	'validation_acc_history': validation_acc_history}
 
-	stats_filepath = os.path.join(data_dir, 'model_pca24_' + str(n_hidden_1) + '_' + str(n_hidden_2) + '_loss_acc_history_' 
+	stats_filepath = os.path.join(data_dir, 'model_' + str(n_hidden_1) + '_' + str(n_hidden_2) + '_loss_acc_history_' 
 		+ str(datetime.now()).split('.')[0] + '.csv')
 	write_to_csv_file(filepath=stats_filepath, data_dict=stats)
 
